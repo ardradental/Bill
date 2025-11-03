@@ -55,8 +55,11 @@
                 -webkit-print-color-adjust: exact;
             }
             @page {
-                margin: 1cm;
+                margin: 0;
                 size: A4;
+            }
+            body {
+                margin: 1.5cm 1cm;
             }
             input, textarea, select {
                 border: none !important;
@@ -78,14 +81,6 @@
             .premium-card {
                 box-shadow: none !important;
                 border: 1px solid #e5e7eb !important;
-            }
-            /* Hide URL in header/footer */
-            @page {
-                margin: 1.5cm 1cm;
-            }
-            /* Additional browser-specific rules to hide headers/footers */
-            html {
-                margin: 0;
             }
         }
         .premium-card {
@@ -901,7 +896,7 @@ Phone: 9059046833, 9032376833`;
                         )}
 
                         {/* Signature Section */}
-                        {doctorName && treatments.length > 0 && paymentType && (
+                        {(doctorName || otherDoctorName) && treatments.length > 0 && paymentType && (
                             <div className="premium-card rounded-lg shadow-lg p-6 mb-6 page-break-avoid">
                                 <div className="flex justify-between items-center">
                                     <div className="text-left">
@@ -909,23 +904,6 @@ Phone: 9059046833, 9032376833`;
                                         <p className="font-bold text-purple-800 text-3xl premium-tagline mb-4" style={{fontFamily: 'cursive'}}>
                                             Ardra Dental Clinic
                                         </p>
-                                        {showOtherDoctor && (
-                                            <div className="mt-2 pt-2 border-t border-gray-300">
-                                                <p className="text-sm text-gray-600">
-                                                    <span className="font-semibold">Treated by:</span> Dr. {otherDoctorName}
-                                                </p>
-                                                <p className="text-sm text-purple-700 font-semibold">
-                                                    Under supervision of Dr. Mounika Mokkapati
-                                                </p>
-                                            </div>
-                                        )}
-                                        {!showOtherDoctor && doctorName && (
-                                            <div className="mt-2 pt-2 border-t border-gray-300">
-                                                <p className="text-sm text-gray-600">
-                                                    <span className="font-semibold">Treated by:</span> Dr. {doctorName}
-                                                </p>
-                                            </div>
-                                        )}
                                         <div className="mt-3 pt-2 border-t border-gray-300">
                                             <p className="text-xs text-gray-500">This is a computer generated invoice</p>
                                         </div>
