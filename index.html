@@ -150,7 +150,6 @@
             const [downPayment, setDownPayment] = useState('');
             const [processingFee, setProcessingFee] = useState('0');
             const [emiTransactionId, setEmiTransactionId] = useState('');
-            const [manualEMIAmount, setManualEMIAmount] = useState('');
             const [editingTreatment, setEditingTreatment] = useState(null);
             const [editValues, setEditValues] = useState({ name: '', price: '', plan: '' });
             const [saveStatus, setSaveStatus] = useState('');
@@ -258,14 +257,12 @@
                 return remainingAmount / parseFloat(emiMonths);
             };
 
-            // Update manual EMI when automatic calculation changes
+            // Update EMI amount whenever relevant values change
             useEffect(() => {
                 if (paymentType === 'EMI (Through SaveIn)' && emiMonths && downPayment) {
-                    if (!manualEMIAmount) {
-                        setManualEMIAmount(calculateEMIAmount().toFixed(2));
-                    }
+                    // Auto-calculate, no manual override
                 }
-            }, [emiMonths, downPayment, calculateTotal()]);
+            }, [emiMonths, downPayment, processingFee, calculateTotal()]);
 
             const handleDoctorChange = (value) => {
                 if (value === 'Others') {
@@ -276,10 +273,6 @@
                     setDoctorName(value);
                     setOtherDoctorName('');
                 }
-            };
-
-            const getEffectiveEMIAmount = () => {
-                return manualEMIAmount ? parseFloat(manualEMIAmount) : calculateEMIAmount();
             };
 
             const handlePrint = () => {
@@ -309,7 +302,7 @@
                     paymentType,
                     emiMonths: paymentType === 'EMI (Through SaveIn)' ? emiMonths : null,
                     downPayment: paymentType === 'EMI (Through SaveIn)' ? downPayment : null,
-                    emiAmount: paymentType === 'EMI (Through SaveIn)' ? getEffectiveEMIAmount() : null,
+                    emiAmount: paymentType === 'EMI (Through SaveIn)' ? calculateEMIAmount() : null,
                     processingFee: paymentType === 'EMI (Through SaveIn)' ? processingFee : null,
                     emiTransactionId: paymentType === 'EMI (Through SaveIn)' ? emiTransactionId : null
                 };
@@ -363,7 +356,7 @@ Financial Summary:
 
 Payment Details:
 - Payment Type: ${paymentType}
-${paymentType === 'EMI (Through SaveIn)' ? `- EMI Transaction ID: ${emiTransactionId || 'N/A'}\n- Down Payment: ₹${downPayment}\n- Processing Fee (SaveIn): ₹${processingFee}\n- EMI: ${emiMonths} months @ ₹${getEffectiveEMIAmount().toFixed(2)}/month\n- Amount Financed (including processing fee): ₹${(calculateTotal() - parseFloat(downPayment) + parseFloat(processingFee || 0)).toFixed(2)}` : ''}
+${paymentType === 'EMI (Through SaveIn)' ? `- EMI Transaction ID: ${emiTransactionId || 'N/A'}\n- Down Payment: ₹${downPayment}\n- Processing Fee (SaveIn): ₹${processingFee}\n- EMI: ${emiMonths} months @ ₹${calculateEMIAmount().toFixed(2)}/month\n- Amount Financed (including processing fee): ₹${(calculateTotal() - parseFloat(downPayment) + parseFloat(processingFee || 0)).toFixed(2)}` : ''}
 
 We pride in your radiant smile!
 
@@ -406,7 +399,6 @@ Phone: 9059046833, 9032376833`;
                 setDownPayment('');
                 setProcessingFee('0');
                 setEmiTransactionId('');
-                setManualEMIAmount('');
                 setShowCustomInput(false);
                 setInvoiceDate(new Date().toISOString().split('T')[0]);
             };
@@ -829,7 +821,6 @@ Phone: 9059046833, 9032376833`;
                                                     <div className="bg-purple-100 border-2 border-purple-400 rounded-lg p-4">
                                                         <div className="flex items-center justify-between mb-3">
                                                             <h3 className="text-lg font-semibold text-purple-900">EMI Calculation (SaveIn)</h3>
-                                                            <span className="text-xs text-purple-700 font-medium bg-purple-200 px-2 py-1 rounded">Editable</span>
                                                         </div>
                                                         <div className="space-y-2 text-sm">
                                                             <div className="flex justify-between">
@@ -849,22 +840,14 @@ Phone: 9059046833, 9032376833`;
                                                                 <span className="font-bold">₹ {(calculateTotal() - parseFloat(downPayment) + parseFloat(processingFee || 0)).toFixed(2)}</span>
                                                             </div>
                                                             <div className="bg-purple-200 p-3 rounded mt-2">
-                                                                <div className="flex justify-between items-center mb-1">
+                                                                <div className="flex justify-between items-center">
                                                                     <span className="font-bold">EMI per Month ({emiMonths} months):</span>
-                                                                    <span className="text-xs text-purple-700">Auto: ₹{calculateEMIAmount().toFixed(2)}</span>
+                                                                    <span className="font-bold text-purple-900 text-xl">₹ {calculateEMIAmount().toFixed(2)}</span>
                                                                 </div>
-                                                                <input
-                                                                    type="number"
-                                                                    value={manualEMIAmount}
-                                                                    onChange={(e) => setManualEMIAmount(e.target.value)}
-                                                                    placeholder={calculateEMIAmount().toFixed(2)}
-                                                                    className="w-full px-3 py-2 border-2 border-purple-400 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent font-bold text-purple-900 text-lg"
-                                                                />
-                                                                <p className="text-xs text-purple-700 mt-1">You can edit this amount manually if needed</p>
                                                             </div>
                                                             <div className="flex justify-between bg-green-100 p-2 rounded border-2 border-green-400 mt-2">
-                                                                <span className="font-bold text-green-900">Total EMI Payments:</span>
-                                                                <span className="font-bold text-green-900">₹ {(getEffectiveEMIAmount() * parseFloat(emiMonths)).toFixed(2)}</span>
+                                                                <span className="font-bold text-green-900">Total Amount Paid Through EMI:</span>
+                                                                <span className="font-bold text-green-900">₹ {(calculateEMIAmount() * parseFloat(emiMonths)).toFixed(2)}</span>
                                                             </div>
                                                             {emiTransactionId && (
                                                                 <div className="flex justify-between bg-blue-100 p-2 rounded border-2 border-blue-400 mt-2">
