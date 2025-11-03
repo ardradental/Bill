@@ -133,6 +133,8 @@
             const [patientLocation, setPatientLocation] = useState('');
             const [clinicalAssessment, setClinicalAssessment] = useState('');
             const [doctorName, setDoctorName] = useState('');
+            const [otherDoctorName, setOtherDoctorName] = useState('');
+            const [showOtherDoctor, setShowOtherDoctor] = useState(false);
             const [treatments, setTreatments] = useState([]);
             const [currentTreatment, setCurrentTreatment] = useState('');
             const [customDescription, setCustomDescription] = useState('');
@@ -144,6 +146,7 @@
             const [emiMonths, setEmiMonths] = useState('');
             const [downPayment, setDownPayment] = useState('');
             const [processingFee, setProcessingFee] = useState('0');
+            const [emiTransactionId, setEmiTransactionId] = useState('');
             const [manualEMIAmount, setManualEMIAmount] = useState('');
             const [editingTreatment, setEditingTreatment] = useState(null);
             const [editValues, setEditValues] = useState({ name: '', price: '', plan: '' });
@@ -248,7 +251,7 @@
 
             const calculateEMIAmount = () => {
                 if (paymentType !== 'EMI (Through SaveIn)' || !emiMonths) return 0;
-                const remainingAmount = calculateTotal() - parseFloat(downPayment || 0);
+                const remainingAmount = calculateTotal() - parseFloat(downPayment || 0) + parseFloat(processingFee || 0);
                 return remainingAmount / parseFloat(emiMonths);
             };
 
@@ -260,6 +263,17 @@
                     }
                 }
             }, [emiMonths, downPayment, calculateTotal()]);
+
+            const handleDoctorChange = (value) => {
+                if (value === 'Others') {
+                    setShowOtherDoctor(true);
+                    setDoctorName('');
+                } else {
+                    setShowOtherDoctor(false);
+                    setDoctorName(value);
+                    setOtherDoctorName('');
+                }
+            };
 
             const getEffectiveEMIAmount = () => {
                 return manualEMIAmount ? parseFloat(manualEMIAmount) : calculateEMIAmount();
@@ -282,7 +296,8 @@
                     patientEmail,
                     patientLocation,
                     clinicalAssessment,
-                    doctorName,
+                    doctorName: showOtherDoctor ? otherDoctorName : doctorName,
+                    supervisingDoctor: showOtherDoctor ? 'Dr. Mounika Mokkapati' : null,
                     treatments,
                     subtotal: calculateSubtotal(),
                     discount,
@@ -292,7 +307,8 @@
                     emiMonths: paymentType === 'EMI (Through SaveIn)' ? emiMonths : null,
                     downPayment: paymentType === 'EMI (Through SaveIn)' ? downPayment : null,
                     emiAmount: paymentType === 'EMI (Through SaveIn)' ? getEffectiveEMIAmount() : null,
-                    processingFee: paymentType === 'EMI (Through SaveIn)' ? processingFee : null
+                    processingFee: paymentType === 'EMI (Through SaveIn)' ? processingFee : null,
+                    emiTransactionId: paymentType === 'EMI (Through SaveIn)' ? emiTransactionId : null
                 };
 
                 // Convert to JSON and create a blob
@@ -330,7 +346,8 @@ Invoice Details:
 - Patient: ${patientName}, Age: ${patientAge}
 ${patientEmail ? `- Patient Email: ${patientEmail}` : ''}
 ${patientPhone ? `- Patient Phone: ${patientPhone}` : ''}
-- Doctor: Dr. ${doctorName}
+- Doctor: Dr. ${showOtherDoctor ? otherDoctorName : doctorName}
+${showOtherDoctor ? `- Under Supervision of: Dr. Mounika Mokkapati` : ''}
 
 Treatments:
 ${treatments.map(t => `- ${t.name}: ₹${t.price.toFixed(2)}`).join('\n')}
@@ -343,7 +360,7 @@ Financial Summary:
 
 Payment Details:
 - Payment Type: ${paymentType}
-${paymentType === 'EMI (Through SaveIn)' ? `- Down Payment: ₹${downPayment}\n- Processing Fee (SaveIn): ₹${processingFee}\n- EMI: ${emiMonths} months @ ₹${getEffectiveEMIAmount().toFixed(2)}/month\n- Remaining Amount: ₹${(calculateTotal() - parseFloat(downPayment)).toFixed(2)}` : ''}
+${paymentType === 'EMI (Through SaveIn)' ? `- EMI Transaction ID: ${emiTransactionId || 'N/A'}\n- Down Payment: ₹${downPayment}\n- Processing Fee (SaveIn): ₹${processingFee}\n- EMI: ${emiMonths} months @ ₹${getEffectiveEMIAmount().toFixed(2)}/month\n- Amount Financed (including processing fee): ₹${(calculateTotal() - parseFloat(downPayment) + parseFloat(processingFee || 0)).toFixed(2)}` : ''}
 
 We pride in your radiant smile!
 
@@ -372,6 +389,8 @@ Phone: 9059046833, 9032376833`;
                 setPatientLocation('');
                 setClinicalAssessment('');
                 setDoctorName('');
+                setOtherDoctorName('');
+                setShowOtherDoctor(false);
                 setTreatments([]);
                 setCurrentTreatment('');
                 setCustomDescription('');
@@ -383,6 +402,7 @@ Phone: 9059046833, 9032376833`;
                 setEmiMonths('');
                 setDownPayment('');
                 setProcessingFee('0');
+                setEmiTransactionId('');
                 setManualEMIAmount('');
                 setShowCustomInput(false);
                 setInvoiceDate(new Date().toISOString().split('T')[0]);
@@ -510,14 +530,37 @@ Phone: 9059046833, 9032376833`;
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Treated By Dr. *</label>
-                                    <input
-                                        type="text"
-                                        value={doctorName}
-                                        onChange={(e) => setDoctorName(e.target.value)}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                        placeholder="Doctor name"
-                                    />
+                                    <select
+                                        value={showOtherDoctor ? 'Others' : doctorName}
+                                        onChange={(e) => handleDoctorChange(e.target.value)}
+                                        className="w-full px-4 py-2 border-2 border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
+                                    >
+                                        <option value="">-- Select Doctor --</option>
+                                        <option value="Mounika Mokkapati">Mounika Mokkapati</option>
+                                        <option value="Others">Others</option>
+                                    </select>
                                 </div>
+                                {showOtherDoctor && (
+                                    <>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">Other Doctor Name *</label>
+                                            <input
+                                                type="text"
+                                                value={otherDoctorName}
+                                                onChange={(e) => setOtherDoctorName(e.target.value)}
+                                                className="w-full px-4 py-2 border-2 border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                                placeholder="Enter doctor name"
+                                            />
+                                        </div>
+                                        <div className="md:col-span-2">
+                                            <div className="bg-purple-100 border-2 border-purple-400 rounded-lg p-4">
+                                                <p className="text-purple-900 font-semibold">
+                                                    ✓ Under the supervision of Dr. Mounika Mokkapati
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </div>
 
@@ -768,6 +811,16 @@ Phone: 9059046833, 9032376833`;
                                                     placeholder="Enter SaveIn processing fee"
                                                 />
                                             </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">EMI Transaction ID</label>
+                                                <input
+                                                    type="text"
+                                                    value={emiTransactionId}
+                                                    onChange={(e) => setEmiTransactionId(e.target.value)}
+                                                    className="w-full px-4 py-2 border-2 border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                                    placeholder="Enter SaveIn transaction ID"
+                                                />
+                                            </div>
                                             {emiMonths && downPayment && (
                                                 <div className="md:col-span-2">
                                                     <div className="bg-purple-100 border-2 border-purple-400 rounded-lg p-4">
@@ -777,20 +830,20 @@ Phone: 9059046833, 9032376833`;
                                                         </div>
                                                         <div className="space-y-2 text-sm">
                                                             <div className="flex justify-between">
-                                                                <span className="font-medium">Total Amount:</span>
+                                                                <span className="font-medium">Total Invoice Amount:</span>
                                                                 <span className="font-bold">₹ {calculateTotal().toFixed(2)}</span>
                                                             </div>
                                                             <div className="flex justify-between">
                                                                 <span className="font-medium">Down Payment:</span>
-                                                                <span className="font-bold">₹ {parseFloat(downPayment).toFixed(2)}</span>
+                                                                <span className="font-bold text-green-600">- ₹ {parseFloat(downPayment).toFixed(2)}</span>
                                                             </div>
                                                             <div className="flex justify-between">
                                                                 <span className="font-medium">Processing Fee (SaveIn):</span>
-                                                                <span className="font-bold text-orange-600">₹ {parseFloat(processingFee || 0).toFixed(2)}</span>
+                                                                <span className="font-bold text-orange-600">+ ₹ {parseFloat(processingFee || 0).toFixed(2)}</span>
                                                             </div>
                                                             <div className="flex justify-between border-t-2 border-purple-300 pt-2">
-                                                                <span className="font-medium">Remaining Amount:</span>
-                                                                <span className="font-bold">₹ {(calculateTotal() - parseFloat(downPayment)).toFixed(2)}</span>
+                                                                <span className="font-medium">Amount to be Financed:</span>
+                                                                <span className="font-bold">₹ {(calculateTotal() - parseFloat(downPayment) + parseFloat(processingFee || 0)).toFixed(2)}</span>
                                                             </div>
                                                             <div className="bg-purple-200 p-3 rounded mt-2">
                                                                 <div className="flex justify-between items-center mb-1">
@@ -807,9 +860,15 @@ Phone: 9059046833, 9032376833`;
                                                                 <p className="text-xs text-purple-700 mt-1">You can edit this amount manually if needed</p>
                                                             </div>
                                                             <div className="flex justify-between bg-green-100 p-2 rounded border-2 border-green-400 mt-2">
-                                                                <span className="font-bold text-green-900">Total EMI Amount:</span>
+                                                                <span className="font-bold text-green-900">Total EMI Payments:</span>
                                                                 <span className="font-bold text-green-900">₹ {(getEffectiveEMIAmount() * parseFloat(emiMonths)).toFixed(2)}</span>
                                                             </div>
+                                                            {emiTransactionId && (
+                                                                <div className="flex justify-between bg-blue-100 p-2 rounded border-2 border-blue-400 mt-2">
+                                                                    <span className="font-bold text-blue-900">Transaction ID:</span>
+                                                                    <span className="font-bold text-blue-900">{emiTransactionId}</span>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -859,7 +918,7 @@ Phone: 9059046833, 9032376833`;
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 no-print mb-6">
                             <button
                                 onClick={handlePrint}
-                                disabled={!patientName || !patientAge || !doctorName || treatments.length === 0 || !paymentType}
+                                disabled={!patientName || !patientAge || (showOtherDoctor ? !otherDoctorName : !doctorName) || treatments.length === 0 || !paymentType}
                                 className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed font-semibold shadow-lg"
                             >
                                 <Icon name="printer" />
@@ -868,7 +927,7 @@ Phone: 9059046833, 9032376833`;
                             
                             <button
                                 onClick={handleSaveAsFile}
-                                disabled={!patientName || !patientAge || !doctorName || treatments.length === 0 || !paymentType}
+                                disabled={!patientName || !patientAge || (showOtherDoctor ? !otherDoctorName : !doctorName) || treatments.length === 0 || !paymentType}
                                 className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed font-semibold shadow-lg"
                             >
                                 <Icon name="download" />
@@ -877,7 +936,7 @@ Phone: 9059046833, 9032376833`;
 
                             <button
                                 onClick={handleSendEmail}
-                                disabled={!patientName || !patientAge || !doctorName || treatments.length === 0 || !paymentType}
+                                disabled={!patientName || !patientAge || (showOtherDoctor ? !otherDoctorName : !doctorName) || treatments.length === 0 || !paymentType}
                                 className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed font-semibold shadow-lg"
                             >
                                 <Icon name="mail" />
